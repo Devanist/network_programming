@@ -1,13 +1,14 @@
-var app = require('express')();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-var readline = require('readline');
-var dgram = require('dgram');
+const app = require('express')();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const readline = require('readline');
+const dgram = require('dgram');
 
 var port = 0;
 var ip = "";
+var offer_message;
 
-var udpServer = dgram.createSocket('udp4');
+const udpServer = dgram.createSocket('udp4');
 
 udpServer.on('error', (err) => {
     console.log(`server error: ${error.stack}\n`);
@@ -15,6 +16,14 @@ udpServer.on('error', (err) => {
 
 udpServer.on('message', (msg, rinfo) => {
     console.log(`server got ${msg} from ${rinfo.address}:${rinfo.port}\n`);
+    if(msg.toString() === "DISCOVER"){
+        console.log(`responding with ${offer_message}`);
+        udpServer.send(offer_message, rinfo.port, rinfo.address, (err) =>{
+            if(err !== undefined){
+                console.log(`error occured: ${err}`);
+            }
+        });
+    }
 });
 
 udpServer.on('listening', () => {
@@ -36,7 +45,7 @@ udpServer.bind(7, () => {
     (anwser) => {
         port = anwser;
         rl.close();
-        
+        offer_message = Buffer.from(`OFFER ${ip}:${port}`);
         app.get('/', (req,res) => {
             res.sendfile('index.html');
         });
