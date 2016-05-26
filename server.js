@@ -45,13 +45,19 @@ udpServer.bind(7, () => {
     (anwser) => {
         port = anwser;
         rl.close();
-        offer_message = Buffer.from(`OFFER ${ip}:${port}`);
+        offer_message = Buffer.from(`OFFER ${port}`);
+        
         app.get('/', (req,res) => {
-            res.sendfile('index.html');
+            res.send('');
         });
 
         io.on('connection', (socket) => {
             console.log('a user connected');
+            
+            socket.on('disconnect', () => {
+                console.log('user disconnected'); 
+            });
+            
         });
 
         http.listen(port, () => {
