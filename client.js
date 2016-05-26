@@ -6,6 +6,7 @@ const dgram = require('dgram');
 
 var clientIp = "";
 var serverIp = "";
+var offeredIps = [];
 var serverPort = 0;
 var clientUDPPort = 8;
 const BROADCAST_MESSAGE = Buffer.from("DISCOVER");
@@ -17,7 +18,15 @@ udpClient.on('error', (error) => {
 });
 
 udpClient.on('message', (msg, rinfo) => {
-    console.log(`respond came: ${msg} from ${rinfo.address}:${rinfo.port}`);
+    
+    offeredIps.push({
+        ip: rinfo.address,
+        port: rinfo.port 
+    });
+//    console.log(`respond came: ${msg} from ${rinfo.address}:${rinfo.port}`);
+    clear();
+    printOffers();
+    
 });
 
 udpClient.on('listening', () => {
@@ -42,3 +51,14 @@ udpClient.bind(clientUDPPort, (err) => {
     });
     
 });
+
+function clear(){
+    process.stdout.write('\033c');
+}
+
+function printOffers(){
+    for(let i = 0; i < offeredIps.length; i++){
+        console.log(`${i+1}. ${offeredIps[i].ip}:${offeredIps[i].port}\n`);
+    }
+    console.log(`To which server you want to connect?`);
+}
