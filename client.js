@@ -2,14 +2,39 @@ const app = require('express')();
 const http = require('http').Server(app);
 const readline = require('readline');
 const dgram = require('dgram');
+const fs = require('fs');
 
 var clientIp = "";
 var serverIp = "";
 var offeredIps = [];
+var savedIps = [];
 var serverPort = 0;
 var clientUDPPort = 8;
 var socket = {};
+var jsonBuffer = new Buffer(1024);
+
+const fileName = "savedServers.json";
 const BROADCAST_MESSAGE = Buffer.from("DISCOVER");
+
+var fd = fs.openSync(fileName, 'w+');
+console.log(fd);
+var stats = fs.statSync(fileName);
+
+if(fs.readSync(fd, jsonBuffer, 0, stats.size, 0) === stats.size){
+    console.log('file read');
+    if(stats.size === 0){
+        savedIps = [];
+    }
+    else{
+        try{
+            savedIps = JSON.parse( jsonBuffer );
+        }
+        catch(err){
+            console.log('IPs file corrupted, creating new one');
+            savedIps = [];
+        }
+    }
+}
 
 const udpClient = dgram.createSocket('udp4');
 const rl = readline.createInterface({
@@ -57,6 +82,10 @@ udpClient.bind(clientUDPPort, (err) => {
     
 });
 
+process.on('exit', (code) => {
+    fs.closeSync(fd);
+});
+
 function connect(){
     socket = require('socket.io-client')(`http://${serverIp}:${serverPort}`);
 
@@ -66,13 +95,16 @@ function connect(){
     });
 
     socket.on('connect', () => {
+        savedIps.push(`${serverIp}:${serverPort}`);
+        jsonBuffer = new Buffer( JSON.stringify(savedIps) );
+        fs.write(fd, jsonBuffer, 0, jsonBuffer.length, stats.size);
         console.log(`Connected`);
     });
 }
 
 function askUserForIp(){
     
-    rl.question('To which server you want to connect?', (anwser) => {
+    rl.question('To which server you want to connect? ', (anwser) => {
         
         if(isNaN( parseInt(anwser) )){
             console.log('Wrong anwser.\n');

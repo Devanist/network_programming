@@ -1,7 +1,7 @@
 {
     "name": "programowanie_sieciowe",
     "version": "0.0.1",
-    "description": "",
+    "description": "Project for network programming lectures at Lodz University of Technology. Written with ES6.",
     "dependencies": {
         "express": "4.13.4",
         "socket.io": "^1.4.6",
