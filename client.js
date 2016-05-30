@@ -14,11 +14,42 @@ var socket = {};
 var jsonBuffer = new Buffer(1024);
 
 const fileName = "savedServers.json";
+const udpClient = dgram.createSocket('udp4');
+bindUDP();
 const BROADCAST_MESSAGE = Buffer.from("DISCOVER");
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-var fd = fs.openSync(fileName, 'w+');
-console.log(fd);
+var fd = fs.openSync(fileName, 'a+');
 var stats = fs.statSync(fileName);
+
+process.on('exit', (code) => {
+    fs.closeSync(fd);
+});
+
+udpClient.on('error', (error) => {
+    console.log(`client udp error: ${error.stack}\n`);
+});
+
+udpClient.on('message', (msg, rinfo) => {
+        
+    offeredIps.push({
+        ip: rinfo.address,
+        port: msg.toString().substr(6)
+    });
+    
+    clear();
+    printOffers();
+    askUserForIp();
+    
+});
+
+udpClient.on('listening', () => {
+    var address = udpClient.address();
+    clientIp = address.address;
+});
 
 if(fs.readSync(fd, jsonBuffer, 0, stats.size, 0) === stats.size){
     console.log('file read');
@@ -36,55 +67,32 @@ if(fs.readSync(fd, jsonBuffer, 0, stats.size, 0) === stats.size){
     }
 }
 
-const udpClient = dgram.createSocket('udp4');
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-udpClient.on('error', (error) => {
-    console.log(`client udp error: ${error.stack}\n`);
-});
-
-udpClient.on('message', (msg, rinfo) => {
-    
-    offeredIps.push({
-        ip: rinfo.address,
-        port: msg.toString().substr(6)
-    });
-    
-    clear();
-    printOffers();
-    askUserForIp();
-    
-});
-
-udpClient.on('listening', () => {
-    var address = udpClient.address();
-    clientIp = address.address;
-});
-
-udpClient.bind(clientUDPPort, (err) => {
-    
-    if(err !== undefined){
-        console.log(`error occured while binding: ${err}`);
-    }
-    
-    udpClient.setBroadcast(true);
-    
-    udpClient.send(BROADCAST_MESSAGE, 7, "", (err) => {
+if(savedIps.length > 0){
+    rl.question('Do you want to connect to the last used server? (Y/N)', (anwser) => {
         
-        if(err !== undefined){
-            console.log(`error occured: ${err}`);
+        if(anwser === 'y' || anwser === 'Y'){
+            
+            let lastIp = savedIps[savedIps.length - 1];
+            serverIp = lastIp.substr(0, lastIp.indexOf(':'));
+            serverPort = lastIp.substr( lastIp.indexOf(':') + 1 );
+            
+            connect();
+            
         }
-
+        
+        else if(anwser === 'n' || anwser === 'N'){
+            
+            lookUpForServers();
+            
+        }
+        
     });
+}
+else{
     
-});
-
-process.on('exit', (code) => {
-    fs.closeSync(fd);
-});
+    lookUpForServers();
+    
+}
 
 function connect(){
     socket = require('socket.io-client')(`http://${serverIp}:${serverPort}`);
@@ -135,4 +143,35 @@ function printOffers(){
     for(let i = 0; i < offeredIps.length; i++){
         console.log(`${i+1}. ${offeredIps[i].ip}:${offeredIps[i].port}\n`);
     }
+}
+
+function lookUpForServers(){
+    
+    udpClient.send(BROADCAST_MESSAGE, 7, "", (err) => {
+            
+        if(err !== undefined){
+            console.log(`error occured: ${err}`);
+        }
+
+    });
+    
+}
+
+function bindUDP(){
+    
+    try{
+        udpClient.bind(clientUDPPort, (err) => {
+        
+            if(err !== undefined){
+                console.log(`error occured while binding: ${err}`);
+            }
+            
+            udpClient.setBroadcast(true);
+            
+        });
+    }
+    catch(err){
+        console.log(err);
+    }
+    
 }
