@@ -16,7 +16,7 @@ var jsonBuffer = new Buffer(1024);
 
 const fileName = "savedServers.json";
 const udpClient = dgram.createSocket('udp4');
-bindUDP();
+
 const BROADCAST_MESSAGE = Buffer.from("DISCOVER");
 const rl = readline.createInterface({
     input: process.stdin,
@@ -26,7 +26,20 @@ const rl = readline.createInterface({
 savedIps = JSON.parse(fs.readFileSync(fileName).toString());
 
 udpClient.on('error', (error) => {
-    console.log(`client udp error: ${error}\n`);
+    if(error.errno === "EADDRINUSE"){
+        clientUDPPort++;
+        bindUDP();
+    }
+    else{
+        console.log(`client udp error: ${error}\n`);            
+    }
+});
+
+process.on("uncaughtException", (error) => {
+    if(error.errno === "EADDRINUSE"){
+        clientUDPPort++;
+        bindUDP();
+    }
 });
 
 udpClient.on('message', (msg, rinfo) => {
@@ -46,6 +59,8 @@ udpClient.on('listening', () => {
     var address = udpClient.address();
     clientIp = address.address;
 });
+
+bindUDP();
 
 if(savedIps.length > 0){
     rl.question('Do you want to connect to the last used server? (Y/N)', (anwser) => {
