@@ -7,6 +7,7 @@ const dgram = require('dgram');
 var port = 0;
 var ip = "";
 var offer_message;
+var loggedUsers = [];
 
 const udpServer = dgram.createSocket('udp4');
 
@@ -54,8 +55,27 @@ udpServer.bind(7, () => {
         io.on('connection', (socket) => {
             console.log('a user connected');
             
+            socket.send("NICK");
+            
             socket.on('disconnect', () => {
-                console.log('user disconnected'); 
+                //console.log(`${socket.nick} -> disconnected`);
+                notifyUserDisconnected(socket.nick); 
+            });
+            
+            socket.on('message', (msg) => {
+                if(msg.substr(0,4) === "NICK"){
+                    if(userIsLogged()){
+                        socket.send("NICK");
+                    }
+                    else{
+                        socket.nick = msg.substr(5);
+                        loggedUsers.push(socket.nick);
+                        socket.send("NICKOK");
+                    }
+                }
+                else if(msg.substr(0, 5) === "VALUE"){
+                    console.log(`${socket.nick} -> ${msg.substr(6)}`);
+                }
             });
             
         });
@@ -66,3 +86,23 @@ udpServer.bind(7, () => {
     });
     
 });
+
+function userIsLogged(name){
+    for(let i = 0; i < loggedUsers; i++){
+        if(loggedUsers[i] === name){
+            return true;
+        }
+    }
+    return false;
+}
+
+function notifyUserDisconnected(user, c = 0){
+    var count = c;
+    if(count < 5){
+        console.log(`${user} -> disconnected`);
+        setTimeout(()=>{
+            count++;
+            notifyUserDisconnected(user, count);
+        },1000);
+    }
+}

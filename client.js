@@ -10,6 +10,7 @@ var offeredIps = [];
 var savedIps = [];
 var serverPort = 0;
 var clientUDPPort = 8;
+var frequency = 0;
 var socket = {};
 var jsonBuffer = new Buffer(1024);
 
@@ -25,7 +26,7 @@ const rl = readline.createInterface({
 savedIps = JSON.parse(fs.readFileSync(fileName).toString());
 
 udpClient.on('error', (error) => {
-    console.log(`client udp error: ${error.stack}\n`);
+    console.log(`client udp error: ${error}\n`);
 });
 
 udpClient.on('message', (msg, rinfo) => {
@@ -90,6 +91,23 @@ function connect(){
         });
         console.log(`Connected`);
     });
+    
+    socket.on("message", (msg) => {
+        if(msg === "NICK"){
+            
+            rl.question("Please enter your NICK: ", (anwser) => {
+                
+                socket.send(`NICK:${anwser}`);
+                
+            });
+            
+        }
+        else if(msg === "NICKOK"){
+            
+            askForFrequency(sendData);
+            
+        }
+    });
 }
 
 function askUserForIp(){
@@ -141,19 +159,41 @@ function lookUpForServers(){
 
 function bindUDP(){
     
-    try{
-        udpClient.bind(clientUDPPort, (err) => {
+    udpClient.bind(clientUDPPort, (err) => {
+    
+        if(err !== undefined){
+            console.log(`error occured while binding: ${err}`);
+        }
         
-            if(err !== undefined){
-                console.log(`error occured while binding: ${err}`);
-            }
-            
-            udpClient.setBroadcast(true);
-            
-        });
-    }
-    catch(err){
-        console.log(err);
-    }
+        udpClient.setBroadcast(true);
+        
+    });
+    
+}
+
+function askForFrequency(callback){
+    
+    rl.question("Please set the frequency of sending data to server: ", (anwser) => {
+                
+        if( !isNaN( parseInt(anwser)) && anwser >= 10 && anwser <= 10000 ){
+            frequency = anwser;
+            callback();
+        }
+        else{
+            askForFrequency();
+        }
+        
+    });
+    
+}
+
+function sendData(){
+    
+    var num = (Math.random() * 100000) | 0;
+    socket.send(`VALUE:${num.toString()}`);
+    console.log(`Sending ${num}`);
+    setTimeout(()=>{
+        sendData();
+    }, frequency);
     
 }
