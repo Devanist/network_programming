@@ -22,12 +22,7 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-var fd = fs.openSync(fileName, 'a+');
-var stats = fs.statSync(fileName);
-
-process.on('exit', (code) => {
-    fs.closeSync(fd);
-});
+savedIps = JSON.parse(fs.readFileSync(fileName).toString());
 
 udpClient.on('error', (error) => {
     console.log(`client udp error: ${error.stack}\n`);
@@ -50,22 +45,6 @@ udpClient.on('listening', () => {
     var address = udpClient.address();
     clientIp = address.address;
 });
-
-if(fs.readSync(fd, jsonBuffer, 0, stats.size, 0) === stats.size){
-    console.log('file read');
-    if(stats.size === 0){
-        savedIps = [];
-    }
-    else{
-        try{
-            savedIps = JSON.parse( jsonBuffer );
-        }
-        catch(err){
-            console.log('IPs file corrupted, creating new one');
-            savedIps = [];
-        }
-    }
-}
 
 if(savedIps.length > 0){
     rl.question('Do you want to connect to the last used server? (Y/N)', (anwser) => {
@@ -105,7 +84,10 @@ function connect(){
     socket.on('connect', () => {
         savedIps.push(`${serverIp}:${serverPort}`);
         jsonBuffer = new Buffer( JSON.stringify(savedIps) );
-        fs.write(fd, jsonBuffer, 0, jsonBuffer.length, stats.size);
+        fs.writeFile(fileName, jsonBuffer, (err) => {
+            if(err) throw err;
+            console.log('Used IP was saved!');
+        });
         console.log(`Connected`);
     });
 }
