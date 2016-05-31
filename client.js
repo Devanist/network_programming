@@ -13,6 +13,7 @@ var clientUDPPort = 8;
 var frequency = 0;
 var socket = {};
 var jsonBuffer = new Buffer(1024);
+var connected = false;
 
 const fileName = "savedServers.json";
 const udpClient = dgram.createSocket('udp4');
@@ -96,8 +97,13 @@ function connect(){
         console.log(`Connection failed: ${error}`);
         askUserForIp();
     });
+    
+    socket.on('reconnect_attempt', () => {
+        console.log("Trying to reconnect...");
+    });
 
     socket.on('connect', () => {
+        connected = true;
         savedIps.push(`${serverIp}:${serverPort}`);
         jsonBuffer = new Buffer( JSON.stringify(savedIps) );
         fs.writeFile(fileName, jsonBuffer, (err) => {
@@ -122,6 +128,11 @@ function connect(){
             askForFrequency(sendData);
             
         }
+    });
+    
+    socket.on("disconnect", () => {
+        connected = false;
+        console.log("Disconnected from server.");
     });
 }
 
@@ -204,11 +215,15 @@ function askForFrequency(callback){
 
 function sendData(){
     
-    var num = (Math.random() * 100000) | 0;
-    socket.send(`VALUE:${num.toString()}`);
-    console.log(`Sending ${num}`);
-    setTimeout(()=>{
-        sendData();
-    }, frequency);
-    
+    if(connected){
+        var num = (Math.random() * 100000) | 0;
+        socket.send(`VALUE:${num.toString()}`);
+        console.log(`Sending ${num}`);
+        setTimeout(()=>{
+            sendData();
+        }, frequency);
+    }
+    else{
+        return;
+    }
 }
