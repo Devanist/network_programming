@@ -11,6 +11,8 @@ var savedIps = [];
 var serverPort = 0;
 var clientUDPPort = 8;
 var frequency = 0;
+var username = "";
+var nameFile = "name.json";
 var socket = {};
 var jsonBuffer = new Buffer(1024);
 var connected = false;
@@ -29,6 +31,15 @@ try{
 }
 catch(err){
     savedIps = [];
+}
+
+try{
+    username = JSON.parse( fs.readFileSync(nameFile).toString() );
+    console.log(`Saved name found: ${username}`);
+}
+catch(err){
+    username = "";
+    console.log(`Saved name not found.`);
 }
 
 udpClient.on('error', (error) => {
@@ -121,15 +132,18 @@ function connect(){
     socket.on("message", (msg) => {
         if(msg === "NICK"){
             
-            rl.question("Please enter your NICK: ", (anwser) => {
-                
-                socket.send(`NICK:${anwser}`);
-                
-            });
+            askForName();
             
         }
         else if(msg === "NICKOK"){
             
+            fs.writeFile(nameFile, JSON.stringify(username), (err) => {
+                
+                if(err !== undefined && err !== null){
+                    console.log(`Error while saving name to file: ${err}`);
+                }
+                
+            });
             askForFrequency(sendData);
             
         }
@@ -164,6 +178,37 @@ function askUserForIp(){
         
     });
     
+}
+
+function askForName(){
+    if(username === ""){
+        rl.question("Please enter your NICK: ", (anwser) => {
+        
+            username = anwser;
+            socket.send(`NICK:${username}`);
+            
+        });
+    }
+    else{
+        rl.question(`Do you want to use name ${username}? `, (anwser) => {
+            
+            if(anwser === "Y" || anwser === "y"){
+                socket.send(`NICK:${username}`);
+            }
+            else if(anwser === "N" || anwser === "n"){
+                rl.question("Please enter your NICK: ", (anwser) => {
+                
+                    socket.send(`NICK:${anwser}`);
+                    
+                });
+            }
+            else{
+                console.log("Wrong anwser.");
+                askForName();
+            }
+            
+        });
+    }
 }
 
 function clear(){

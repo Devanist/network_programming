@@ -58,13 +58,13 @@ udpServer.bind(7, () => {
             socket.send("NICK");
             
             socket.on('disconnect', () => {
-                //console.log(`${socket.nick} -> disconnected`);
                 notifyUserDisconnected(socket.nick); 
             });
             
             socket.on('message', (msg) => {
                 if(msg.substr(0,4) === "NICK"){
-                    if(userIsLogged()){
+                    console.log(`User greeing as a ${msg.substr(5)}. `);
+                    if(userIsLogged() || msg.substr(5) === "" || msg.substr(5) === "undefined"){
                         socket.send("NICK");
                     }
                     else{
