@@ -24,7 +24,12 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
-savedIps = JSON.parse(fs.readFileSync(fileName).toString());
+try{
+    savedIps = JSON.parse(fs.readFileSync(fileName).toString());
+}
+catch(err){
+    savedIps = [];
+}
 
 udpClient.on('error', (error) => {
     if(error.errno === "EADDRINUSE"){
