@@ -3,8 +3,19 @@ const http = require('http').Server(app);
 const readline = require('readline');
 const dgram = require('dgram');
 const fs = require('fs');
+var network = require('network');
 
+var broadcastIp = "";
 var clientIp = "";
+
+network.get_active_interface(function(err, obj){
+    broadcastIp = obj.gateway_ip;
+    clientIp = obj.ip_address;
+    console.log("info\n");
+    console.log(broadcastIp);
+    console.log(clientIp);
+});
+
 var serverIp = "";
 var offeredIps = [];
 var savedIps = [];
@@ -74,7 +85,8 @@ udpClient.on('message', (msg, rinfo) => {
 
 udpClient.on('listening', () => {
     var address = udpClient.address();
-    clientIp = address.address;
+    // clientIp = address.address;
+    // console.log(address.family);
 });
 
 bindUDP();
@@ -223,7 +235,7 @@ function printOffers(){
 
 function lookUpForServers(){
     
-    udpClient.send(BROADCAST_MESSAGE, 7, "", (err) => {
+    udpClient.send(BROADCAST_MESSAGE, 7, broadcastIp, (err) => {
             
         if(err !== undefined){
             console.log(`error occured: ${err}`);
