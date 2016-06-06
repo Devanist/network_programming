@@ -216,7 +216,7 @@ function askForFrequency(callback){
 function sendData(){
     
     if(connected){
-        var num = (Math.random() * 100000) | 0;
+        var num = (Math.random() * 100) | 0;
         socket.send(`VALUE:${num.toString()}`);
         console.log(`Sending ${num}`);
         setTimeout(()=>{
