@@ -6,11 +6,13 @@ const fs = require('fs');
 var network = require('network');
 
 var broadcastIp = "";
+var mask = "";
 var clientIp = "";
 
 network.get_active_interface(function(err, obj){
-    broadcastIp = obj.gateway_ip;
+    mask = obj.netmask;
     clientIp = obj.ip_address;
+    broadcastIp = getBroadcastIP(clientIp, mask);
     console.log("info\n");
     console.log(broadcastIp);
     console.log(clientIp);
@@ -288,4 +290,23 @@ function sendData(){
     else{
         return;
     }
+}
+
+function getBroadcastIP(hostIP, mask){
+    var bip = "";
+
+    var netmask = mask.split(".");
+    var clientIP = hostIp.split(".");
+    
+    for(let i = 0; i < 4; i++){
+        netmask[i] = (parseInt(netmask[i]) >>> 0).toString(2);
+        clientIP[i] = (parseInt(clientIP[i]) >>> 0).toString(2);
+
+        bip += `${clientIP[i] | (!netmask[i])}`;
+        if(i != 3){
+            bip += ".";
+        }
+    }
+
+    return bip;
 }
