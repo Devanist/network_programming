@@ -15,6 +15,7 @@ network.get_active_interface(function(err, obj){
     broadcastIp = getBroadcastIP(clientIp, mask);
     console.log("info\n");
     console.log(broadcastIp);
+    console.log(mask);
     console.log(clientIp);
 });
 
@@ -296,17 +297,43 @@ function getBroadcastIP(hostIP, mask){
     var bip = "";
 
     var netmask = mask.split(".");
-    var clientIP = hostIp.split(".");
+    var clientIP = hostIP.split(".");
     
     for(let i = 0; i < 4; i++){
         netmask[i] = (parseInt(netmask[i]) >>> 0).toString(2);
         clientIP[i] = (parseInt(clientIP[i]) >>> 0).toString(2);
 
-        bip += `${clientIP[i] | (!netmask[i])}`;
+        let l = netmask[i].length;
+        if(l < 8){
+            for(let j = 0; j < 8 - l; j++){
+                netmask[i] = "0" + netmask[i];
+            }
+        }
+
+        l = clientIP[i].length;
+        if(clientIP[i].length < 8){
+            for(let j = 0; j < 8 - l; j++){
+                clientIP[i] = "0" + clientIP[i];
+            }
+        }
+
+        let part = "";
+        for(let j = 0; j < 8; j++){
+            let n;
+            if(parseInt(netmask[i].charAt(j)) === 0){
+                n = 1;
+            }
+            else{
+                n = 0;
+            }
+            part += parseInt(clientIP[i][j]) | n;  
+        }
+        bip += parseInt(part,2).toString();
         if(i != 3){
             bip += ".";
         }
     }
+
 
     return bip;
 }
