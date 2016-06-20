@@ -3,6 +3,11 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const readline = require('readline');
 const dgram = require('dgram');
+var network = require('network');
+var serverIp;
+network.get_active_interface(function(err, obj){
+    serverIp = obj.ip_address;
+});
 
 var port = 0;
 var ip = "";
@@ -38,7 +43,7 @@ udpServer.on('listening', () => {
     console.log(`server listening at ip ${ip}\n`);
 });
 
-udpServer.bind(7, () => {
+udpServer.bind(7, serverIp, () => {
     
     console.log('listening on port 7 using UDP protocol\n');
     
