@@ -255,7 +255,7 @@ function bindUDP(){
         if(err !== undefined){
             console.log(`error occured while binding: ${err}`);
         }
-        
+        console.log(`UDP binded at port ${clientUDPPort}`);
         udpClient.setBroadcast(true);
         
     });

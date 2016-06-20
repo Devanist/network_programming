@@ -9,7 +9,12 @@ var ip = "";
 var offer_message;
 var loggedUsers = [];
 
-const udpServer = dgram.createSocket('udp4');
+const udpServer = dgram.createSocket(
+    {
+        type: 'udp4',
+        reuseAddr: true
+    }
+    );
 
 udpServer.on('error', (err) => {
     console.log(`server error: ${error.stack}\n`);
